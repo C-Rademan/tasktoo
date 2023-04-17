@@ -16,6 +16,12 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.StringWriter;
 import javax.xml.transform.Transformer;
+import java.util.Scanner;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import org.w3c.dom.Node;
+import java.util.HashMap;
 
 
 
@@ -41,16 +47,30 @@ public class App {
             transformer.transform(new DOMSource(doc), new StreamResult(writer));
             //String xmlString = writer.toString();
             //System.out.println(xmlString);
-    
+            
+            //let the user choose fields
+            String[] fieldsArray = getSelectedFields();
+            List<String> fieldsList = Arrays.asList(fieldsArray);
             // Call the printFields method to print out the field values
-            printFields(doc);
+            printFields(doc,fieldsList);
+            
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
+    public static String[] getSelectedFields() {
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Enter field names separated by commas: ");
+        String input = scanner.nextLine();
+        String[] selectedFields = input.split(",");
+        for (int i = 0; i < selectedFields.length; i++) {
+            selectedFields[i] = selectedFields[i].trim();
+        }
+        scanner.close();
+        return selectedFields;
+    }
     
-    
-    public static void printFields(Document doc) {
+    public static void printFields(Document doc, List<String> selectedFields) {
         // Get the root element
         Element root = doc.getDocumentElement();
     
@@ -61,23 +81,32 @@ public class App {
         for (int i = 0; i < recordNodes.getLength(); i++) {
             Element recordElement = (Element) recordNodes.item(i);
     
-            // Get the fields for this record
-            String name = recordElement.getElementsByTagName("name").item(0).getTextContent();
-            String postalZip = recordElement.getElementsByTagName("postalZip").item(0).getTextContent();
-            String region = recordElement.getElementsByTagName("region").item(0).getTextContent();
-            String country = recordElement.getElementsByTagName("country").item(0).getTextContent();
-            String address = recordElement.getElementsByTagName("address").item(0).getTextContent();
-            String list = recordElement.getElementsByTagName("list").item(0).getTextContent();
+            // Create a map to store the field values for this record
+            Map<String, String> fieldValues = new HashMap<>();
     
-            // Print out the fields
+            // Loop through the child nodes of this record and store their values in the map
+            NodeList childNodes = recordElement.getChildNodes();
+            for (int j = 0; j < childNodes.getLength(); j++) {
+                Node childNode = childNodes.item(j);
+                if (childNode.getNodeType() == Node.ELEMENT_NODE) {
+                    String fieldName = childNode.getNodeName();
+                    String fieldValue = childNode.getTextContent();
+                    fieldValues.put(fieldName, fieldValue);
+                }
+            }
+    
+            // Print out the selected fields for this record
             System.out.println("Record #" + (i + 1) + ":");
-            System.out.println("  Name: " + name);
-            System.out.println("  Postal Zip: " + postalZip);
-            System.out.println("  Region: " + region);
-            System.out.println("  Country: " + country);
-            System.out.println("  Address: " + address);
-            System.out.println("  List: " + list);
+            for (String fieldName : selectedFields) {
+                if (fieldValues.containsKey(fieldName)) {
+                    String fieldValue = fieldValues.get(fieldName);
+                    System.out.println("  " + fieldName + ": " + fieldValue);
+                } else {
+                    System.out.println("  " + fieldName + ": (not found)");
+                }
+            }
         }
-    }
+    }//
+    
     
 }
