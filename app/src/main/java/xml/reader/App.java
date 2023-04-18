@@ -50,7 +50,7 @@ public class App {
             //System.out.println(xmlString);
             
             //let the user choose fields
-            String[] fieldsArray = getSelectedFields();
+            String[] fieldsArray = getSelectedFields(doc);
             List<String> fieldsList = Arrays.asList(fieldsArray);
             // Call the printFields method to print out the field values
             printFields(doc,fieldsList);
@@ -59,17 +59,56 @@ public class App {
             e.printStackTrace();
         }
     }
-    public static String[] getSelectedFields() {
+    public static boolean isValidFieldName(String fieldName, Document doc) {
+        // Get the root element
+        Element root = doc.getDocumentElement();
+    
+        // Get the list of record nodes
+        NodeList recordNodes = root.getElementsByTagName("record");
+    
+        // Loop through the record nodes
+        for (int i = 0; i < recordNodes.getLength(); i++) {
+            Element recordElement = (Element) recordNodes.item(i);
+    
+            // Loop through the child nodes of this record and check if any have the given field name
+            NodeList childNodes = recordElement.getChildNodes();
+            for (int j = 0; j < childNodes.getLength(); j++) {
+                Node childNode = childNodes.item(j);
+                if (childNode.getNodeType() == Node.ELEMENT_NODE && childNode.getNodeName().equals(fieldName)) {
+                    return true;
+                }
+            }
+        }
+    
+        // If we haven't found the field name, it's not valid
+        return false;
+    }
+    
+
+    public static String[] getSelectedFields(Document doc) {
         Scanner scanner = new Scanner(System.in);
-        System.out.print("Enter field names separated by commas: ");
-        String input = scanner.nextLine();
-        String[] selectedFields = input.split(",");
-        for (int i = 0; i < selectedFields.length; i++) {
-            selectedFields[i] = selectedFields[i].trim();
+        boolean isValidInput = false;
+        String[] selectedFields = null;
+        while (!isValidInput) {
+            System.out.print("Enter field names separated by commas: ");
+            String input = scanner.nextLine().toLowerCase();
+            selectedFields = input.split(",");
+            for (int i = 0; i < selectedFields.length; i++) {
+                selectedFields[i] = selectedFields[i].trim();
+                if (!isValidFieldName(selectedFields[i], doc)) {
+                    System.out.println(selectedFields[i] + " is not a valid field name.");
+                    selectedFields = null;
+                    break;
+                }
+            }
+            if (selectedFields != null) {
+                isValidInput = true;
+            }
         }
         scanner.close();
         return selectedFields;
     }
+    
     
     public static void printFields(Document doc, List<String> selectedFields) {
     // Create an ObjectMapper to serialize JSON objects
