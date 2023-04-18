@@ -22,7 +22,8 @@ import java.util.List;
 import java.util.Map;
 import org.w3c.dom.Node;
 import java.util.HashMap;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 
 public class App {
@@ -71,42 +72,47 @@ public class App {
     }
     
     public static void printFields(Document doc, List<String> selectedFields) {
-        // Get the root element
-        Element root = doc.getDocumentElement();
-    
-        // Get the list of record nodes
-        NodeList recordNodes = root.getElementsByTagName("record");
-    
-        // Loop through the record nodes
-        for (int i = 0; i < recordNodes.getLength(); i++) {
-            Element recordElement = (Element) recordNodes.item(i);
-    
-            // Create a map to store the field values for this record
-            Map<String, String> fieldValues = new HashMap<>();
-    
-            // Loop through the child nodes of this record and store their values in the map
-            NodeList childNodes = recordElement.getChildNodes();
-            for (int j = 0; j < childNodes.getLength(); j++) {
-                Node childNode = childNodes.item(j);
-                if (childNode.getNodeType() == Node.ELEMENT_NODE) {
-                    String fieldName = childNode.getNodeName();
-                    String fieldValue = childNode.getTextContent();
-                    fieldValues.put(fieldName, fieldValue);
-                }
-            }
-    
-            // Print out the selected fields for this record
-            System.out.println("Record #" + (i + 1) + ":");
-            for (String fieldName : selectedFields) {
-                if (fieldValues.containsKey(fieldName)) {
-                    String fieldValue = fieldValues.get(fieldName);
-                    System.out.println("  " + fieldName + ": " + fieldValue);
-                } else {
-                    System.out.println("  " + fieldName + ": (not found)");
-                }
+    // Create an ObjectMapper to serialize JSON objects
+    ObjectMapper objectMapper = new ObjectMapper();
+
+    // Get the root element
+    Element root = doc.getDocumentElement();
+
+    // Get the list of record nodes
+    NodeList recordNodes = root.getElementsByTagName("record");
+
+    // Loop through the record nodes
+    for (int i = 0; i < recordNodes.getLength(); i++) {
+        Element recordElement = (Element) recordNodes.item(i);
+
+        // Create a JSON object to store the field values for this record
+        ObjectNode recordNode = objectMapper.createObjectNode();
+
+        // Loop through the child nodes of this record and add their values to the object
+        NodeList childNodes = recordElement.getChildNodes();
+        for (int j = 0; j < childNodes.getLength(); j++) {
+            Node childNode = childNodes.item(j);
+            if (childNode.getNodeType() == Node.ELEMENT_NODE) {
+                String fieldName = childNode.getNodeName();
+                String fieldValue = childNode.getTextContent();
+                recordNode.put(fieldName, fieldValue);
             }
         }
-    }//
+
+        // Create a new JSON object that only contains the selected fields for this record
+        ObjectNode selectedFieldsNode = objectMapper.createObjectNode();
+        for (String fieldName : selectedFields) {
+            if (recordNode.has(fieldName)) {
+                String fieldValue = recordNode.get(fieldName).asText();
+                selectedFieldsNode.put(fieldName, fieldValue);
+            }
+        }
+
+        // Serialize the selected fields object to a JSON string and print it
+        String json = selectedFieldsNode.toString();
+        System.out.println("Record #" + (i + 1) + ": " + json);
+    }
+}
     
     
 }
